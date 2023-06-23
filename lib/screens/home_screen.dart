@@ -8,28 +8,20 @@ class Home extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return (Scaffold(
-      appBar: AppBar(
-        title: const Text('Home'),
-      ),
-      body: Column(
-        children: [
-          for (final item in groceryItems)
-            Row(
-              children: [
-                Text(item.name),
-                const SizedBox(
-                  width: 20,
-                ),
-                Text(item.category.title),
-                const Spacer(),
-                Icon(
-                  Icons.square,
-                  color: item.category.color,
-                )
-              ],
-            )
-        ],
-      ),
-    ));
+        appBar: AppBar(
+          title: const Text('Home'),
+        ),
+        body: ListView.builder(
+            itemCount: groceryItems.length,
+            itemBuilder: (ctx, index) => ListTile(
+                  title: Text(groceryItems[index].name),
+                  leading: Container(
+                    width: 23,
+                    height: 23,
+                    color: groceryItems[index].category.color,
+                  ),
+                  trailing: Text(groceryItems[index].quantity.toString()),
+                  subtitle: Text(groceryItems[index].category.title),
+                ))));
   }
 }
