@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shopping/data/categories.dart';
 import 'package:shopping/models/categories.dart';
+import 'package:shopping/models/grocery_items.dart';
 
 class GroceryItemsScreen extends StatefulWidget {
   const GroceryItemsScreen({super.key});
@@ -17,7 +18,14 @@ class _GroceryItemsScreen extends State<GroceryItemsScreen> {
   var _enteredQT = 1;
   var _enteredCategory = categories[Categories.dairy];
   void _saveItem() {
-    _formkey.currentState!.validate();
+    if (_formkey.currentState!.validate()) {
+      _formkey.currentState!.save();
+    }
+    Navigator.of(context).pop(GroceryItem(
+        category: _enteredCategory!,
+        id: DateTime.now.toString(),
+        name: _enteredName,
+        quantity: _enteredQT));
   }
 
   @override
