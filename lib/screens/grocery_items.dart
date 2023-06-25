@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shopping/data/categories.dart';
+import 'package:http/http.dart' as http;
 import 'package:shopping/models/categories.dart';
 import 'package:shopping/models/grocery_items.dart';
 
@@ -17,15 +20,25 @@ class _GroceryItemsScreen extends State<GroceryItemsScreen> {
   var _enteredName = '';
   var _enteredQT = 1;
   var _enteredCategory = categories[Categories.dairy];
-  void _saveItem() {
+
+  void _saveItem() async {
     if (_formkey.currentState!.validate()) {
       _formkey.currentState!.save();
     }
-    Navigator.of(context).pop(GroceryItem(
-        category: _enteredCategory!,
-        id: DateTime.now.toString(),
-        name: _enteredName,
-        quantity: _enteredQT));
+    final url =
+        Uri.https('signal-7900f-default-rtdb.firebaseio.com', 'shooping.json');
+    final response = await http.post(url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'category': _enteredCategory!.title,
+          'name': _enteredName,
+          'quantity': _enteredQT
+        }));
+
+    if (!context.mounted) {
+      return;
+    }
+    Navigator.of(context).pop();
   }
 
   @override
