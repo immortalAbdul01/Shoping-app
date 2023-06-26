@@ -15,11 +15,20 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  String? _error;
+  var _isLoading = true;
+  final List<GroceryItem> _finalList = [];
   List<GroceryItem> _newList = [];
   void addItem() async {
-    await Navigator.of(context)
+    final newItem = await Navigator.of(context)
         .push(MaterialPageRoute(builder: (ctx) => const GroceryItemsScreen()));
-    _loadItems();
+    // _loadItems();
+    if (newItem == null) {
+      return;
+    }
+    setState(() {
+      _newList.add(newItem);
+    });
   }
 
   @override
@@ -28,17 +37,31 @@ class _HomeState extends State<Home> {
     _loadItems();
   }
 
-  void _onRemoveMeal(GroceryItem item) {
+  void _onRemoveMeal(GroceryItem item) async {
     setState(() {
-      _newList.remove(item);
+      _finalList.remove(item);
     });
+    final index = _finalList.indexOf(item);
+    final url = Uri.https(
+        'signal-7900f-default-rtdb.firebaseio.com', 'shooping/${item.id}.json');
+    final response = await http.delete(url);
+    if (response.statusCode >= 400) {
+      setState(() {
+        _finalList.remove(item);
+      });
+    }
   }
 
   void _loadItems() async {
-    final List<GroceryItem> _finalList = [];
     final url =
         Uri.https('signal-7900f-default-rtdb.firebaseio.com', 'shooping.json');
     final response = await http.get(url);
+    if (response.body == 'null') {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
     final Map<String, dynamic> _loadedList = await json.decode(response.body);
     for (final item in _loadedList.entries) {
       final category = categories.entries
@@ -51,42 +74,60 @@ class _HomeState extends State<Home> {
           name: item.value['name'],
           quantity: item.value['quantity']));
     }
+    if (response.statusCode == 404) {
+      setState(() {
+        _error = 'Try again...';
+      });
+    }
 
     setState(() {
       _newList = _finalList;
+      _isLoading = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    Widget content = _newList.isNotEmpty
-        ? ListView.builder(
-            itemCount: _newList.length,
-            itemBuilder: (ctx, index) => Dismissible(
-                  background: Container(
-                    color: Colors.red,
-                  ),
-                  key: ValueKey(_newList[index]),
-                  child: ListTile(
-                    title: Text(_newList[index].name),
-                    leading: Container(
-                      width: 23,
-                      height: 23,
-                      color: _newList[index].category.color,
-                    ),
-                    trailing: Text(_newList[index].quantity.toString()),
-                    subtitle: Text(_newList[index].category.title),
-                  ),
-                  onDismissed: (direction) {
-                    _onRemoveMeal(_newList[index]);
-                  },
-                ))
-        : Center(
-            child: Text(
-            'No items here',
-            style: Theme.of(context).textTheme.titleLarge,
-          ));
+    Widget content = Center(
+        child: Text(
+      'No items here',
+      style: Theme.of(context).textTheme.titleLarge,
+    ));
 
+    if (_isLoading) {
+      content = const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_newList.isNotEmpty) {
+      content = ListView.builder(
+          itemCount: _newList.length,
+          itemBuilder: (ctx, index) => Dismissible(
+                background: Container(
+                  color: Colors.red,
+                ),
+                key: ValueKey(_newList[index]),
+                child: ListTile(
+                  title: Text(_newList[index].name),
+                  leading: Container(
+                    width: 23,
+                    height: 23,
+                    color: _newList[index].category.color,
+                  ),
+                  trailing: Text(_newList[index].quantity.toString()),
+                  subtitle: Text(_newList[index].category.title),
+                ),
+                onDismissed: (direction) {
+                  _onRemoveMeal(_newList[index]);
+                },
+              ));
+    }
+    if (_error != null) {
+      content = Center(
+        child: Text(_error!),
+      );
+    }
     return (Scaffold(
         appBar: AppBar(
           title: const Text('Home'),
