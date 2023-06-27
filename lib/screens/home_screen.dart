@@ -53,37 +53,43 @@ class _HomeState extends State<Home> {
   }
 
   void _loadItems() async {
-    final url =
-        Uri.https('signal-7900f-default-rtdb.firebaseio.com', 'shooping.json');
-    final response = await http.get(url);
-    if (response.body == 'null') {
+    try {
+      final url = Uri.https(
+          'signal-7900f-default-rtdb.firebaseio.com', 'shooping.json');
+      final response = await http.get(url);
+      if (response.body == 'null') {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+      final Map<String, dynamic> _loadedList = await json.decode(response.body);
+      for (final item in _loadedList.entries) {
+        final category = categories.entries
+            .firstWhere(
+                (element) => element.value.title == item.value['category'])
+            .value;
+        _finalList.add(GroceryItem(
+            category: category,
+            id: item.key,
+            name: item.value['name'],
+            quantity: item.value['quantity']));
+      }
+      if (response.statusCode == 404) {
+        setState(() {
+          _error = 'Try again...';
+        });
+      }
+
       setState(() {
+        _newList = _finalList;
         _isLoading = false;
       });
-      return;
-    }
-    final Map<String, dynamic> _loadedList = await json.decode(response.body);
-    for (final item in _loadedList.entries) {
-      final category = categories.entries
-          .firstWhere(
-              (element) => element.value.title == item.value['category'])
-          .value;
-      _finalList.add(GroceryItem(
-          category: category,
-          id: item.key,
-          name: item.value['name'],
-          quantity: item.value['quantity']));
-    }
-    if (response.statusCode == 404) {
+    } catch (err) {
       setState(() {
-        _error = 'Try again...';
+        _error = 'something went wrong please try again later';
       });
     }
-
-    setState(() {
-      _newList = _finalList;
-      _isLoading = false;
-    });
   }
 
   @override
